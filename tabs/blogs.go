@@ -5,13 +5,14 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
+	"github.com/Pratyay360/pratyaysh/libs"
 )
 
 type article struct {
 	title   string
 	summary string
 	date    string
+	url     string
 }
 
 type Blogs struct {
@@ -24,9 +25,12 @@ func NewBlogs(width int) Blogs {
 	return Blogs{
 		width: width,
 		articles: []article{
-			{title: "Building terminal interfaces in Go", summary: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.", date: "2026-07-30"},
-			{title: "Small programs, clear ideas", summary: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", date: "2026-06-12"},
-			{title: "Learning in public", summary: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.", date: "2026-05-04"},
+			{
+				title:   "",
+				summary: "",
+				date:    "",
+				url:     "",
+			},
 		},
 	}
 }
@@ -38,6 +42,9 @@ func (b Blogs) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		b.width = msg.Width
 	case tea.KeyPressMsg:
+		if len(b.articles) == 0 {
+			return b, nil
+		}
 		switch msg.String() {
 		case "up", "k":
 			b.selected = (b.selected - 1 + len(b.articles)) % len(b.articles)
@@ -49,26 +56,26 @@ func (b Blogs) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (b Blogs) View() tea.View {
-	accent := lipgloss.Color("205")
-	muted := lipgloss.Color("243")
-	width := max(20, min(70, b.width-12))
-	rows := make([]string, len(b.articles))
+	width := contentWidth(b.width)
 
+	if len(b.articles) == 0 {
+		return tea.NewView(mutedStyle.Render("Nothing published yet."))
+	}
+
+	rows := make([]string, len(b.articles))
 	for i, item := range b.articles {
-		marker := "  "
-		titleStyle := lipgloss.NewStyle().Bold(true)
+		marker, titleStyle := "  ", boldStyle
 		if i == b.selected {
-			marker = "> "
-			titleStyle = titleStyle.Foreground(accent)
+			marker, titleStyle = "> ", selectedStyle
 		}
 		rows[i] = fmt.Sprintf("%s%s  %s\n%s",
 			marker,
-			lipgloss.NewStyle().Foreground(muted).Render(item.date),
-			titleStyle.Render(item.title),
-			lipgloss.NewStyle().PaddingLeft(2).Width(width).Render(item.summary),
+			mutedStyle.Render(item.date),
+			libs.Link(item.url, titleStyle.Render(item.title)),
+			indentStyle.PaddingLeft(2).Width(width).Render(item.summary),
 		)
 	}
 
-	help := lipgloss.NewStyle().Foreground(muted).Render("Up/Down or j/k: select article")
+	help := mutedStyle.Render("Up/Down or j/k: select article")
 	return tea.NewView(strings.Join(rows, "\n\n") + "\n\n" + help)
 }

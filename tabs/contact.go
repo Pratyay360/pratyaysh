@@ -5,19 +5,22 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"charm.land/lipgloss/v2"
 	"github.com/Pratyay360/pratyaysh/libs"
-	"github.com/lsferreira42/figlet-go/figlet"
 )
 
-type About struct {
+type contact struct {
+	label string
+	url   string
+}
+
+type Contact struct {
 	width    int
 	selected int
 	contacts []contact
 }
 
-func NewAbout(width int) About {
-	return About{
+func NewContact(width int) Contact {
+	return Contact{
 		width: width,
 		contacts: []contact{
 			{label: "GitHub", url: "https://github.com/Pratyay360"},
@@ -33,36 +36,28 @@ func NewAbout(width int) About {
 	}
 }
 
-func (a About) Init() tea.Cmd { return nil }
+func (c Contact) Init() tea.Cmd { return nil }
 
-func (a About) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (c Contact) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		a.width = msg.Width
+		c.width = msg.Width
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "up", "k":
-			a.selected = (a.selected - 1 + len(a.contacts)) % len(a.contacts)
+			c.selected = (c.selected - 1 + len(c.contacts)) % len(c.contacts)
 		case "down", "j":
-			a.selected = (a.selected + 1) % len(a.contacts)
+			c.selected = (c.selected + 1) % len(c.contacts)
 		}
 	}
-	return a, nil
+	return c, nil
 }
 
-const bioText = "A curious dev just navigating the landscape of tech, curious about learning stuff. " +
-	"This is the terminal version of my profile."
-
-func (a About) View() tea.View {
-	width := contentWidth(a.width)
-
-	figlet.Render("Hello, I am Pratyay Mitra Mustafi")
-	bio := lipgloss.NewStyle().Width(width).Render(bioText)
-
-	links := make([]string, len(a.contacts))
-	for i, item := range a.contacts {
+func (c Contact) View() tea.View {
+	links := make([]string, len(c.contacts))
+	for i, item := range c.contacts {
 		marker, style := "  ", mutedStyle
-		if i == a.selected {
+		if i == c.selected {
 			marker, style = "> ", selectedStyle
 		}
 		row := fmt.Sprintf("%s%-10s %s", marker, item.label, item.url)
@@ -71,7 +66,8 @@ func (a About) View() tea.View {
 
 	help := mutedStyle.Render("Up/Down or j/k: focus contact | ctrl+click a link to open")
 	return tea.NewView(strings.Join([]string{
-		bio, "",
+		"", // bio placeholder
+		"",
 		boldStyle.Render("Contact"),
 		strings.Join(links, "\n"),
 		"", help,

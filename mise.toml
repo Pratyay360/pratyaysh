@@ -2,3 +2,10 @@
 golines = "latest"
 go = "latest"
 sops = "latest"
+jqp = "latest"
+golangci-lint = "latest"
+golangci-lint-langserver = "latest"
+
+[tasks]
+build = "go build"
+clean = "go clean"

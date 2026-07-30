@@ -1,0 +1,4 @@
+[tools]
+golines = "latest"
+go = "latest"
+sops = "latest"

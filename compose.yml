@@ -1,0 +1,9 @@
+services:
+  app:
+    image: ghcr.io/pratyay360/pratyaysh:latest
+    container_name: pratyaysh
+    ports:
+      - "2222:2222"
+    volumes:
+      - ./.ssh:/.ssh:z
+    restart: unless-stopped

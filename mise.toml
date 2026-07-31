@@ -5,6 +5,7 @@ sops = "latest"
 jqp = "latest"
 golangci-lint = "latest"
 golangci-lint-langserver = "latest"
+"npm:sandbox" = "latest"
 
 [tasks]
 build = "go build"

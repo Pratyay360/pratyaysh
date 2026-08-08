@@ -54,6 +54,8 @@ func (c Contact) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (c Contact) View() tea.View {
+	email := libs.Link("mailto:pratyay@example.com", selectedStyle.Render("pratyay@example.com"))
+
 	links := make([]string, len(c.contacts))
 	for i, item := range c.contacts {
 		marker, style := "  ", mutedStyle
@@ -64,11 +66,12 @@ func (c Contact) View() tea.View {
 		links[i] = libs.Link(item.url, style.Render(row))
 	}
 
-	help := mutedStyle.Render("Up/Down or j/k: focus contact | ctrl+click a link to open")
+	help := mutedStyle.Render("Up/Down j/k: focus • ctrl+click to open • or type \"ssh\" from anywhere")
 	return tea.NewView(strings.Join([]string{
-		"", // bio placeholder
+		mutedStyle.Render("Prefer email for quickest reply:"),
+		email,
 		"",
-		boldStyle.Render("Contact"),
+		boldStyle.Render("Elsewhere"),
 		strings.Join(links, "\n"),
 		"", help,
 	}, "\n"))

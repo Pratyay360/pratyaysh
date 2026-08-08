@@ -15,9 +15,10 @@ var (
 	mutedStyle    = lipgloss.NewStyle().Foreground(Muted)
 	selectedStyle = lipgloss.NewStyle().Bold(true).Foreground(Accent)
 	boldStyle     = lipgloss.NewStyle().Bold(true)
-	errorStyle    = lipgloss.NewStyle().Foreground(Danger)
+	errorStyle    = lipgloss.NewStyle().Foreground(Danger).Bold(true)
 	indentStyle   = lipgloss.NewStyle().PaddingLeft(6)
 )
+
 func contentWidth(width int) int {
 	return max(20, min(70, width-12))
 }

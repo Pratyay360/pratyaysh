@@ -5,20 +5,32 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
 	"charm.land/glamour/v2"
+	"charm.land/glow/v3/utils"
 )
 
-var httpClient = &http.Client{}
-
 func Fetch(ctx context.Context, url string) (string, error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return "", fmt.Errorf("fetch %s: build request: %w", url, err)
+	}
+	req.Header.Set("User-Agent", userAgent)
+	if tok := githubToken(); tok != "" && isGitHubURL(url) {
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
+
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("fetch %s: %w", url, err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return "", fmt.Errorf("fetch %s: %s %s", url, resp.Status, string(b))
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("read body: %w", err)
@@ -26,29 +38,29 @@ func Fetch(ctx context.Context, url string) (string, error) {
 	return string(body), nil
 }
 
+func isGitHubURL(u string) bool {
+	return len(u) > 22 && (u[:22] == "https://api.github.com" || (len(u) >= 33 && u[:33] == "https://raw.githubusercontent.com"))
+}
+
 func RenderMarkdown(source string, width int) (string, error) {
-	if width < 20 {
-		width = 20
+	if width <= 0 {
+		width = 80
 	}
+	// Glow strips YAML frontmatter before rendering (charm.land/glow/v3/utils.RemoveFrontmatter).
+	cleaned := utils.RemoveFrontmatter([]byte(source))
+
 	r, err := glamour.NewTermRenderer(
-		glamour.WithStandardStyle("dark"),
+		utils.GlamourStyle("auto", false),
 		glamour.WithWordWrap(width),
-		glamour.WithEmoji(),
+		glamour.WithPreservedNewLines(),
 	)
 	if err != nil {
-		return "", fmt.Errorf("new renderer: %w", err)
+		return "", fmt.Errorf("render markdown: %w", err)
 	}
-	out, err := r.Render(source)
+
+	out, err := r.Render(string(cleaned))
 	if err != nil {
 		return "", fmt.Errorf("render markdown: %w", err)
 	}
 	return out, nil
-}
-
-func Render(ctx context.Context, url string, width int) (string, error) {
-	source, err := Fetch(ctx, url)
-	if err != nil {
-		return "", err
-	}
-	return RenderMarkdown(source, width)
 }

@@ -1,3 +1,5 @@
+name: pratyaysh
+
 services:
   app:
     image: ghcr.io/pratyay360/pratyaysh:latest

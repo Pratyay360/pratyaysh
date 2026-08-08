@@ -1,12 +1,19 @@
 [tools]
-golines = "latest"
 go = "latest"
 sops = "latest"
 jqp = "latest"
+biome = "latest"
 golangci-lint = "latest"
-golangci-lint-langserver = "latest"
-"npm:sandbox" = "latest"
+
+[deps]
+go = { auto = true }
+
+[env]
+SOPS_AGE_RECIPIENTS = "age1a9p2k3u40mvdntpad4ga7akvnnqqwm6eskfr2yxkgq3u9lp7jfns2wgqty, age155th0ptdjf3gkp7pmzqcepe9kec9n3w32l87czf29fda4a2gj49ql0pg8a"
+_ = { file = "{ path = .env }" }
 
 [tasks]
-build = "go build"
+encrypt = "sops -e -i .env && mv .env .env.example"
+decrypt = "mv .env.example .env && sops -d -i .env"
 clean = "go clean"
+build = "go build"

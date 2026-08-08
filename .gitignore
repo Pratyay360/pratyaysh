@@ -1,3 +1,6 @@
 .ssh/
 pratyaysh
 .vercel
+kube/pratyaysh-pod.yaml
+caddy/data/
+caddy/config/

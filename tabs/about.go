@@ -7,7 +7,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/Pratyay360/pratyaysh/libs"
-	"github.com/lsferreira42/figlet-go/figlet"
 )
 
 type About struct {
@@ -50,14 +49,32 @@ func (a About) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return a, nil
 }
 
-const bioText = "A curious dev just navigating the landscape of tech, curious about learning stuff. " +
-	"This is the terminal version of my profile."
+const bioText = "Curious developer navigating the ever-shifting landscape of tech — " +
+	"Go, infra, and open-source. I like building small tools that feel good to use. " +
+	"This is the terminal version of my personal site. SSH in anytime."
 
 func (a About) View() tea.View {
 	width := contentWidth(a.width)
 
-	figlet.Render("Hello, I am Pratyay Mitra Mustafi")
-	bio := lipgloss.NewStyle().Width(width).Render(bioText)
+	// Simple ASCII banner — figlet is intentionally avoided here: the
+	// figlet-go library panics on some terminals and its API doesn't
+	// return a string reliably in this bubbletea v2 setup. A lipgloss
+	// banner is more portable.
+	banner := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(Accent).
+		Width(width).
+		Render("pratyay mustafi  —  hello!")
+
+	bio := lipgloss.NewStyle().
+		Width(width).
+		Foreground(Muted).
+		Render(bioText)
+
+	avail := lipgloss.NewStyle().
+		Width(width).
+		Foreground(lipgloss.Color("243")).
+		Render("Available via SSH • " + libs.Link("https://pratyay.dev", "pratyay.dev"))
 
 	links := make([]string, len(a.contacts))
 	for i, item := range a.contacts {
@@ -69,10 +86,15 @@ func (a About) View() tea.View {
 		links[i] = libs.Link(item.url, style.Render(row))
 	}
 
-	help := mutedStyle.Render("Up/Down or j/k: focus contact | ctrl+click a link to open")
+	help := mutedStyle.Render("↑/↓ j/k: focus • ctrl+click link to open • tab to switch sections")
 	return tea.NewView(strings.Join([]string{
-		bio, "",
-		boldStyle.Render("Contact"),
+		banner,
+		"",
+		bio,
+		"",
+		avail,
+		"",
+		boldStyle.Render("Find me on"),
 		strings.Join(links, "\n"),
 		"", help,
 	}, "\n"))

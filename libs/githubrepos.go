@@ -10,16 +10,13 @@ import (
 	"time"
 )
 
-// userAgent is required for polite GitHub API access; unauthenticated requests
-// without one are rate limited far more aggressively.
-const userAgent = "pratyaysh-tui (+https://github.com/Pratyay360/pratyaysh)"
-
 const (
+	userAgent    = "pratyaysh-tui (+https://github.com/Pratyay360/pratyaysh)"
 	reposPerPage = 100
 	maxRepoPages = 3
 )
 
-// Repo is a trimmed-down GitHub repository record.
+// Repo is a trimmed GitHub repository record.
 type Repo struct {
 	Name        string    `json:"name"`
 	URL         string    `json:"html_url"`
@@ -32,8 +29,8 @@ type Repo struct {
 	Topics      []string  `json:"topics"`
 }
 
-// GetRepos lists the public, non-fork, non-archived repositories for username,
-// most-starred first (ties broken by most recently pushed).
+// GetRepos lists public, non-fork, non-archived repos for username,
+// most-starred first (ties by most recently pushed).
 func GetRepos(ctx context.Context, username string) ([]Repo, error) {
 	if username == "" {
 		return nil, fmt.Errorf("github: empty username")
@@ -51,6 +48,7 @@ func GetRepos(ctx context.Context, username string) ([]Repo, error) {
 		}
 	}
 
+	// filter forks / archived
 	filtered := all[:0]
 	for _, r := range all {
 		if r.Fork || r.Archived {
@@ -69,9 +67,6 @@ func GetRepos(ctx context.Context, username string) ([]Repo, error) {
 }
 
 func fetchRepoPage(ctx context.Context, username string, page int) ([]Repo, error) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	endpoint := fmt.Sprintf(
 		"https://api.github.com/users/%s/repos?per_page=%d&page=%d&sort=pushed",
 		url.PathEscape(username), reposPerPage, page,
@@ -84,6 +79,9 @@ func fetchRepoPage(ctx context.Context, username string, page int) ([]Repo, erro
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	if tok := githubToken(); tok != "" {
+		req.Header.Set("Authorization", "Bearer "+tok)
+	}
 
 	resp, err := httpClient.Do(req)
 	if err != nil {

@@ -4,10 +4,10 @@ import (
 	_ "embed"
 	"fmt"
 
-	"charm.land/glamour/v2"
 	"github.com/Pratyay360/pratyaysh/libs"
 )
 
+//go:embed project.md
 var ProjectMD string
 
 func RenderMarkdown(width int) (string, error) {
@@ -20,5 +20,5 @@ func ListProjects() {
 		fmt.Println(ProjectMD)
 		return
 	}
-	glamour.Render(rendered, err.Error())
+	fmt.Println(rendered)
 }

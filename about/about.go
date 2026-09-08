@@ -7,6 +7,7 @@ import (
 	"github.com/Pratyay360/pratyaysh/libs"
 )
 
+//go:embed about.md
 var AboutMD string
 
 func RenderMarkdown(width int) (string, error) {

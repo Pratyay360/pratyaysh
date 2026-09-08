@@ -79,8 +79,3 @@ func QueryBlogs(ctx context.Context) ([]BlogArticle, error) {
 
 	return out, nil
 }
-
-// QueryBlogsSimple keeps backward compat for any legacy caller (misspelling preserved).
-func QueryBlogsLegacy() ([]BlogArticle, error) {
-	return QueryBlogs(context.Background())
-}

@@ -238,9 +238,9 @@ func (m model) View() tea.View {
 	accent := lipgloss.Color("205")
 	muted := lipgloss.Color("243")
 
-	panelWidth := min(78, m.width-4)
-	if panelWidth < 28 {
-		panelWidth = max(28, m.width-4)
+	panelWidth := min(100, m.width-4)
+	if panelWidth < 30 {
+		panelWidth = max(30, m.width-4)
 	}
 
 	title := lipgloss.NewStyle().

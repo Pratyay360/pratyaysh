@@ -20,5 +20,5 @@ var (
 )
 
 func contentWidth(width int) int {
-	return max(20, min(70, width-12))
+	return max(20, min(92, width-12))
 }

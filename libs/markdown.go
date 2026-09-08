@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"charm.land/glamour/v2"
 	"charm.land/glow/v3/utils"
@@ -38,7 +39,8 @@ func Fetch(ctx context.Context, url string) (string, error) {
 }
 
 func isGitHubURL(u string) bool {
-	return len(u) > 22 && (u[:22] == "https://api.github.com" || (len(u) >= 33 && u[:33] == "https://raw.githubusercontent.com"))
+	return strings.HasPrefix(u, "https://api.github.com") ||
+		strings.HasPrefix(u, "https://raw.githubusercontent.com")
 }
 
 func RenderMarkdown(source string, width int) (string, error) {

@@ -18,6 +18,8 @@ import (
 	wishtea "charm.land/wish/v2/bubbletea"
 
 	"charm.land/ssh"
+	"github.com/Pratyay360/pratyaysh/about"
+	"github.com/Pratyay360/pratyaysh/projects"
 	"github.com/Pratyay360/pratyaysh/tabs"
 )
 
@@ -34,6 +36,27 @@ var tabNames = []string{
 }
 
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "about":
+			about.About()
+			return
+		case "projects":
+			projects.ListProjects()
+			return
+		case "help", "-h", "--help":
+			fmt.Println("pratyaysh - interactive terminal resume & portfolio")
+			fmt.Println("\nUsage:")
+			fmt.Println("  pratyaysh            Start SSH server (default)")
+			fmt.Println("  pratyaysh serve      Start SSH server explicitly")
+			fmt.Println("  pratyaysh about      Print about information")
+			fmt.Println("  pratyaysh projects   List projects")
+			return
+		case "serve":
+			// Proceed to start SSH server
+		}
+	}
+
 	keyPath := hostKeyPath()
 	if _, err := os.Stat(keyPath); err != nil {
 		log.Warn("Host key not found", "path", keyPath, "error", err)

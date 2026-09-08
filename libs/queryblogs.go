@@ -28,7 +28,6 @@ func QueryBlogs(ctx context.Context) ([]BlogArticle, error) {
 	if err != nil {
 		return nil, fmt.Errorf("blogs: build request: %w", err)
 	}
-	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
 	if tok := githubToken(); tok != "" {

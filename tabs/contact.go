@@ -54,7 +54,7 @@ func (c Contact) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (c Contact) View() tea.View {
-	email := libs.Link("mailto:pratyay@example.com", selectedStyle.Render("pratyay@example.com"))
+	email := libs.Link("mailto:pratyaymustafi@outlook.com", selectedStyle.Render("pratyaymustafi@outlook.com"))
 
 	links := make([]string, len(c.contacts))
 	for i, item := range c.contacts {

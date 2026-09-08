@@ -6,17 +6,20 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/Pratyay360/pratyaysh/about"
 	"github.com/Pratyay360/pratyaysh/libs"
 )
 
 type About struct {
-	width    int
-	selected int
-	contacts []contact
+	width     int
+	selected  int
+	contacts  []contact
+	rendered  string
+	lastWidth int
 }
 
 func NewAbout(width int) About {
-	return About{
+	a := About{
 		width: width,
 		contacts: []contact{
 			{label: "GitHub", url: "https://github.com/Pratyay360"},
@@ -30,6 +33,19 @@ func NewAbout(width int) About {
 			{label: "GitLab", url: "https://gitlab.com/pratyay360"},
 		},
 	}
+	return a.renderContent()
+}
+
+func (a About) renderContent() About {
+	w := contentWidth(a.width)
+	rendered, err := about.RenderMarkdown(w)
+	if err != nil {
+		a.rendered = about.AboutMD
+	} else {
+		a.rendered = rendered
+	}
+	a.lastWidth = a.width
+	return a
 }
 
 func (a About) Init() tea.Cmd { return nil }
@@ -38,6 +54,7 @@ func (a About) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		a.width = msg.Width
+		a = a.renderContent()
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "up", "k":
@@ -49,27 +66,16 @@ func (a About) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return a, nil
 }
 
-const bioText = "Curious developer navigating the ever-shifting landscape of tech — " +
-	"Go, infra, and open-source. I like building small tools that feel good to use. " +
-	"This is the terminal version of my personal site. SSH in anytime."
-
 func (a About) View() tea.View {
 	width := contentWidth(a.width)
-
-	// Simple ASCII banner — figlet is intentionally avoided here: the
-	// figlet-go library panics on some terminals and its API doesn't
-	// return a string reliably in this bubbletea v2 setup. A lipgloss
-	// banner is more portable.
-	banner := lipgloss.NewStyle().
-		Bold(true).
-		Foreground(Accent).
-		Width(width).
-		Render("pratyay mustafi  —  hello!")
-
-	bio := lipgloss.NewStyle().
-		Width(width).
-		Foreground(Muted).
-		Render(bioText)
+	rendered := a.rendered
+	if rendered == "" || a.width != a.lastWidth {
+		if r, err := about.RenderMarkdown(width); err == nil {
+			rendered = r
+		} else {
+			rendered = about.AboutMD
+		}
+	}
 
 	avail := lipgloss.NewStyle().
 		Width(width).
@@ -88,14 +94,13 @@ func (a About) View() tea.View {
 
 	help := mutedStyle.Render("↑/↓ j/k: focus • ctrl+click link to open • tab to switch sections")
 	return tea.NewView(strings.Join([]string{
-		banner,
-		"",
-		bio,
+		a.rendered,
 		"",
 		avail,
 		"",
 		boldStyle.Render("Find me on"),
 		strings.Join(links, "\n"),
-		"", help,
+		"",
+		help,
 	}, "\n"))
 }

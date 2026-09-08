@@ -15,7 +15,6 @@ func Fetch(ctx context.Context, url string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("fetch %s: build request: %w", url, err)
 	}
-	req.Header.Set("User-Agent", userAgent)
 	if tok := githubToken(); tok != "" && isGitHubURL(url) {
 		req.Header.Set("Authorization", "Bearer "+tok)
 	}
@@ -46,9 +45,7 @@ func RenderMarkdown(source string, width int) (string, error) {
 	if width <= 0 {
 		width = 80
 	}
-	// Glow strips YAML frontmatter before rendering (charm.land/glow/v3/utils.RemoveFrontmatter).
 	cleaned := utils.RemoveFrontmatter([]byte(source))
-
 	r, err := glamour.NewTermRenderer(
 		utils.GlamourStyle("auto", false),
 		glamour.WithWordWrap(width),

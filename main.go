@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -36,6 +37,26 @@ var tabNames = []string{
 }
 
 func main() {
+	// Railway / PaaS healthcheck: expose HTTP on $PORT so the platform sees the service as healthy.
+	// The SSH TUI still listens on 2222; this is just for the orchestrator.
+	if p := os.Getenv("PORT"); p != "" {
+		go func() {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "text/plain")
+				_, _ = w.Write([]byte("pratyaysh ssh: ssh ssh.pratyay.qzz.io\n"))
+			})
+			mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte("ok"))
+			})
+			log.Info("Starting health server", "port", p)
+			if err := http.ListenAndServe(net.JoinHostPort("", p), mux); err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Error("Health server error", "error", err)
+			}
+		}()
+	}
+
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
 		case "about":

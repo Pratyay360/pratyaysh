@@ -136,21 +136,23 @@ func (b Blogs) View() tea.View {
 
 	switch {
 	case b.loading:
-		return tea.NewView(mutedStyle.Render("Fetching articles from blogs_md…"))
+		return tea.NewView(mutedStyle.Render("Fetching articles from blogs_md…") + "\n---FOOTER---\n" + mutedStyle.Render("g/G scroll • tab to switch"))
 	case b.err != nil:
-		return tea.NewView(strings.Join([]string{
+		mainContent := strings.Join([]string{
 			errorStyle.Render("Could not load blogs."),
 			lipgloss.NewStyle().Width(width).Foreground(Muted).Render(b.err.Error()),
 			"",
 			mutedStyle.Render("r: retry"),
-		}, "\n"))
+		}, "\n")
+		return tea.NewView(mainContent + "\n---FOOTER---\n" + mutedStyle.Render("g/G scroll • tab to switch"))
 	case len(b.articles) == 0:
-		return tea.NewView(strings.Join([]string{
+		mainContent := strings.Join([]string{
 			mutedStyle.Render("Nothing published yet."),
 			"",
 			mutedStyle.Render("Add markdown files to github.com/pratyay360/blogs_md"),
 			mutedStyle.Render("r: retry"),
-		}, "\n"))
+		}, "\n")
+		return tea.NewView(mainContent + "\n---FOOTER---\n" + mutedStyle.Render("g/G scroll • tab to switch"))
 	}
 
 	rows := make([]string, len(b.articles))
@@ -174,36 +176,35 @@ func (b Blogs) View() tea.View {
 	} else if b.previewErr != nil {
 		previewBox = errorStyle.Render("Preview failed: " + b.previewErr.Error())
 	} else if b.preview != "" {
-		// Render markdown via glow (charm.land/glow/v3/utils + glamour) so
-		// the preview shows styled headings/code instead of raw markdown.
-		renderWidth := width - 4 // account for border + padding
+
+		renderWidth := width - 4
 		if renderWidth < 20 {
 			renderWidth = width
 		}
 		if rendered, err := libs.RenderMarkdown(b.preview, renderWidth); err == nil {
 			previewBox = lipgloss.NewStyle().
-				Width(width).
+				Width(width - 2).
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(Subtle).
-				Padding(1, 1).
+				Margin(1).
 				Render(strings.TrimSpace(rendered))
 		} else {
 			// fallback to raw preview on render error
 			previewBox = lipgloss.NewStyle().
-				Width(width).
+				Width(width - 2).
 				Foreground(Muted).
 				Border(lipgloss.RoundedBorder()).
 				BorderForeground(Subtle).
-				Padding(1, 1).
+				Margin(1).
 				Render(b.preview)
 		}
 	}
 
-	help := mutedStyle.Render("Up/Down j/k: select • enter: reload preview • r: refresh • ctrl+click link to open")
-	content := strings.Join(rows, "\n\n")
+	mainContent := strings.Join(rows, "\n\n")
 	if previewBox != "" {
-		content += "\n\n" + lipgloss.NewStyle().Width(width).Render(previewBox)
+		mainContent += "\n\n" + previewBox
 	}
-	content += "\n\n" + help
-	return tea.NewView(content)
+
+	help := mutedStyle.Render("Up/Down j/k: select • enter: reload preview • r: refresh • g/G scroll • ctrl+click link to open")
+	return tea.NewView(mainContent + "\n---FOOTER---\n" + help)
 }

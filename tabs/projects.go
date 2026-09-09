@@ -1,8 +1,6 @@
 package tabs
 
 import (
-	"strings"
-
 	tea "charm.land/bubbletea/v2"
 	"github.com/Pratyay360/pratyaysh/projects"
 )
@@ -60,12 +58,8 @@ func (p Projects) View() tea.View {
 		}
 	}
 
-	help := mutedStyle.Render("r: reload • tab to switch sections")
-	content := strings.Join([]string{
-		rendered,
-		"",
-		help,
-	}, "\n")
+	help := mutedStyle.Render("r: reload • g/G scroll • tab to switch")
+	content := rendered + "\n---FOOTER---\n" + help
 
 	return tea.NewView(content)
 }

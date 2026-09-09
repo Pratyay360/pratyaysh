@@ -1,8 +1,6 @@
 #!/bin/sh
 set -e
 
-# Ensure SSH host key exists (Railway has ephemeral FS without volume).
-# Prefer /.ssh/ssh (container path) then fallback.
 KEY_PATH="${SSH_HOST_KEY:-/.ssh/ssh}"
 if [ ! -f "$KEY_PATH" ]; then
     echo "Host key not found at $KEY_PATH, generating..."
@@ -17,10 +15,7 @@ fi
 # Start Cloudflare Tunnel in the background if TUNNEL_TOKEN is set
 if [ -n "$TUNNEL_TOKEN" ]; then
     echo "Starting Cloudflare Tunnel..."
-    # Use quic by default, but Railway blocks some UDP - cloudflared auto-falls back to http2.
-    # Optionally force http2: --protocol http2
     cloudflared tunnel --no-autoupdate run --token "$TUNNEL_TOKEN" &
 fi
 
-# Execute the main application
 exec pratyaysh "$@"

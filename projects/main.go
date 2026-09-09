@@ -16,7 +16,7 @@ func RenderMarkdown(width int) (string, error) {
 
 func ListProjects() {
 	rendered, err := RenderMarkdown(80)
-	if err != nil {
+		if err != nil {
 		fmt.Println(ProjectMD)
 		return
 	}

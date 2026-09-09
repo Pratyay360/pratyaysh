@@ -20,6 +20,6 @@ COPY --from=builder /pratyaysh /usr/local/bin/pratyaysh
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-EXPOSE 2222
+EXPOSE 22
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

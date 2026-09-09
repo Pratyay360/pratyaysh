@@ -4,10 +4,8 @@ services:
   app:
     image: ghcr.io/pratyay360/pratyaysh:latest
     container_name: pratyaysh
-    ports:
-      - "2222:2222"
     volumes:
       - ./.ssh:/.ssh:z
-    environment:
-      - TUNNEL_TOKEN=${TUNNEL_TOKEN:-}
+    env_file:
+      - .env
     restart: unless-stopped

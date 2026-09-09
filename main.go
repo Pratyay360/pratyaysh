@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -19,8 +18,6 @@ import (
 	wishtea "charm.land/wish/v2/bubbletea"
 
 	"charm.land/ssh"
-	"github.com/Pratyay360/pratyaysh/about"
-	"github.com/Pratyay360/pratyaysh/projects"
 	"github.com/Pratyay360/pratyaysh/tabs"
 )
 
@@ -37,47 +34,6 @@ var tabNames = []string{
 }
 
 func main() {
-	// Railway / PaaS healthcheck: expose HTTP on $PORT so the platform sees the service as healthy.
-	// The SSH TUI still listens on 2222; this is just for the orchestrator.
-	if p := os.Getenv("PORT"); p != "" {
-		go func() {
-			mux := http.NewServeMux()
-			mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-				w.Header().Set("Content-Type", "text/plain")
-				_, _ = w.Write([]byte("pratyaysh ssh: ssh ssh.pratyay.qzz.io\n"))
-			})
-			mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				_, _ = w.Write([]byte("ok"))
-			})
-			log.Info("Starting health server", "port", p)
-			if err := http.ListenAndServe(net.JoinHostPort("", p), mux); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				log.Error("Health server error", "error", err)
-			}
-		}()
-	}
-
-	if len(os.Args) > 1 {
-		switch os.Args[1] {
-		case "about":
-			about.About()
-			return
-		case "projects":
-			projects.ListProjects()
-			return
-		case "help", "-h", "--help":
-			fmt.Println("pratyaysh - interactive terminal resume & portfolio")
-			fmt.Println("\nUsage:")
-			fmt.Println("  pratyaysh            Start SSH server (default)")
-			fmt.Println("  pratyaysh serve      Start SSH server explicitly")
-			fmt.Println("  pratyaysh about      Print about information")
-			fmt.Println("  pratyaysh projects   List projects")
-			return
-		case "serve":
-			// Proceed to start SSH server
-		}
-	}
-
 	keyPath := hostKeyPath()
 	if _, err := os.Stat(keyPath); err != nil {
 		log.Warn("Host key not found", "path", keyPath, "error", err)
@@ -150,10 +106,11 @@ func loggingMiddleware(next ssh.Handler) ssh.Handler {
 }
 
 type model struct {
-	width     int
-	height    int
-	activeTab int
-	tabs      []tea.Model
+	width       int
+	height      int
+	activeTab   int
+	scrollOffset int
+	tabs        []tea.Model
 }
 
 func teaHandler(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
@@ -214,6 +171,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "tab", "right", "l":
 			m.activeTab = (m.activeTab + 1) % len(m.tabs)
+			m.scrollOffset = 0
 			return m, nil
 
 		case "shift+tab", "left", "h":
@@ -221,13 +179,24 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.activeTab < 0 {
 				m.activeTab = len(m.tabs) - 1
 			}
+			m.scrollOffset = 0
 			return m, nil
 
 		case "1", "2", "3", "4":
 			idx := int(msg.String()[0] - '1')
 			if idx < len(m.tabs) {
 				m.activeTab = idx
+				m.scrollOffset = 0
 			}
+			return m, nil
+
+		case "g":
+			m.scrollOffset = 0
+			return m, nil
+
+		case "G":
+			// scroll to bottom will be computed in View
+			m.scrollOffset = -1
 			return m, nil
 
 		default:
@@ -237,9 +206,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	default:
-		// Broadcast async messages (reposLoadedMsg, blogsLoadedMsg, preview, etc.)
-		// to all tabs. Forwarding only to the active tab would drop results
-		// that arrive while the user is on another tab, leaving loading stuck.
 		var cmds []tea.Cmd
 		for i := range m.tabs {
 			var cmd tea.Cmd
@@ -277,7 +243,7 @@ func (m model) View() tea.View {
 
 	for i, name := range tabNames {
 		style := lipgloss.NewStyle().
-			Padding(0, 1).
+			MarginRight(2).
 			Foreground(muted)
 
 		if i == m.activeTab {
@@ -292,39 +258,93 @@ func (m model) View() tea.View {
 
 	tabsRow := lipgloss.JoinHorizontal(lipgloss.Top, labels...)
 
-	panelContent := m.tabs[m.activeTab].View().Content
+	rawContent := m.tabs[m.activeTab].View().Content
+
+	// Split into main scrollable content and fixed footer
+	mainContent := rawContent
+	footer := ""
+	if idx := strings.Index(rawContent, "---FOOTER---"); idx != -1 {
+		mainContent = strings.TrimSpace(rawContent[:idx])
+		footer = strings.TrimSpace(rawContent[idx+len("---FOOTER---"):])
+	}
+
+	// Calculate available height for panel content
+	// header: title(1) + subtitle(1) + blank(1) + tabs(1) + blank(1) = 5
+	// footer area: blank(1) + help(1) = 2
+	// panel borders: top(1) + bottom(1) = 2
+	// body margin: top(1) + bottom(1) = 2
+	// total overhead = 5 + 2 + 2 + 2 = 11
+	overhead := 11
+	maxContentHeight := m.height - overhead
+	if maxContentHeight < 3 {
+		maxContentHeight = 3
+	}
+
+	lines := strings.Split(mainContent, "\n")
+	totalLines := len(lines)
+
+	// Handle G (scroll to bottom)
+	if m.scrollOffset == -1 {
+		if totalLines > maxContentHeight {
+			m.scrollOffset = totalLines - maxContentHeight
+		} else {
+			m.scrollOffset = 0
+		}
+	}
+
+	// Clamp scroll offset
+	if m.scrollOffset < 0 {
+		m.scrollOffset = 0
+	}
+	if totalLines > maxContentHeight && m.scrollOffset > totalLines-maxContentHeight {
+		m.scrollOffset = totalLines - maxContentHeight
+	}
+	if totalLines <= maxContentHeight {
+		m.scrollOffset = 0
+	}
+
+	// Slice visible lines
+	if totalLines > maxContentHeight {
+		lines = lines[m.scrollOffset : m.scrollOffset+maxContentHeight]
+	}
+
+	panelContent := strings.Join(lines, "\n")
+
+	// Add scroll indicator
+	scrollIndicator := ""
+	if totalLines > maxContentHeight {
+		scrollIndicator = fmt.Sprintf("  [%d/%d]", m.scrollOffset+maxContentHeight, totalLines)
+	}
+
 	panel := lipgloss.NewStyle().
 		Width(panelWidth).
-		Padding(1, 2).
+		Margin(1, 2).
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(lipgloss.Color("238")).
 		Render(panelContent)
 
 	help := lipgloss.NewStyle().
 		Foreground(muted).
-		Render("Tab/Shift+Tab • ←/→ h/l • 1-4 switch • q/esc quit   •   ↑/↓ j/k inside tabs • r refresh")
+		Render("Tab/←→ • 1-4 switch • q quit • g/G scroll • ↑/↓ inside tabs • r refresh" + scrollIndicator)
 
-	body := strings.Join([]string{
+	parts := []string{
 		title,
 		subtitle,
 		"",
 		tabsRow,
 		"",
 		panel,
-		"",
-		help,
-	}, "\n")
-
-	// Center vertically when we know the terminal height
-	rendered := lipgloss.NewStyle().
-		Padding(1, 2).
-		Render(body)
-
-	if m.height > 0 {
-		// Place helper would be ideal, but manual height guard keeps small terminals readable.
-		// Don't use PlaceVertical – it truncates. Just ensure we don't overflow.
-		_ = m.height
 	}
+	if footer != "" {
+		parts = append(parts, "", footer)
+	}
+	parts = append(parts, "", help)
+
+	body := strings.Join(parts, "\n")
+
+	rendered := lipgloss.NewStyle().
+		Margin(1).
+		Render(body)
 
 	return tea.NewView(rendered)
 }

@@ -92,15 +92,14 @@ func (a About) View() tea.View {
 		links[i] = libs.Link(item.url, style.Render(row))
 	}
 
-	help := mutedStyle.Render("↑/↓ j/k: focus • ctrl+click link to open • tab to switch sections")
-	return tea.NewView(strings.Join([]string{
+	mainContent := strings.Join([]string{
 		a.rendered,
 		"",
 		avail,
 		"",
-		boldStyle.Render("Find me on"),
-		strings.Join(links, "\n"),
-		"",
-		help,
-	}, "\n"))
+	}, "\n")
+
+	help := mutedStyle.Render("↑/↓ j/k: focus • ctrl+click link to open • g/G scroll • tab to switch")
+
+	return tea.NewView(mainContent + "\n---FOOTER---\n" + help)
 }

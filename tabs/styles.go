@@ -16,6 +16,7 @@ var (
 	selectedStyle = lipgloss.NewStyle().Bold(true).Foreground(Accent)
 	boldStyle     = lipgloss.NewStyle().Bold(true)
 	errorStyle    = lipgloss.NewStyle().Foreground(Danger).Bold(true)
+	topStyle      = lipgloss.NewStyle().PaddingTop(1)
 	indentStyle   = lipgloss.NewStyle().PaddingLeft(6)
 )
 

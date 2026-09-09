@@ -4,3 +4,4 @@ pratyaysh
 kube/pratyaysh-pod.yaml
 caddy/data/
 caddy/config/
+.env

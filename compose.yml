@@ -6,6 +6,12 @@ services:
     container_name: pratyaysh
     volumes:
       - ./.ssh:/.ssh:z
+    restart: unless-stopped
+  cloudflared:
+    image: docker.io/cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
     env_file:
       - .env
-    restart: unless-stopped
+    depends_on:
+      - app

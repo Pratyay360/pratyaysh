@@ -5,18 +5,13 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /pratyaysh .
 
 FROM alpine:3.20
 
-RUN apk add --no-cache ca-certificates openssh-keygen && \
-    mkdir -p /.ssh
+RUN apk add --no-cache ca-certificates openssh-keygen
 
-COPY --from=docker.io/cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
+COPY --from=builder /pratyaysh /usr/bin/pratyaysh
 
-COPY --from=builder /pratyaysh /usr/local/bin/pratyaysh
-
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+CMD ["pratyaysh"]

@@ -12,14 +12,11 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates openssh-keygen && \
     mkdir -p /.ssh
 
-# Copy cloudflared from the official Cloudflare image
-COPY --from=cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
+COPY --from=docker.io/cloudflare/cloudflared:latest /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 
 COPY --from=builder /pratyaysh /usr/local/bin/pratyaysh
 
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
-
-EXPOSE 22
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

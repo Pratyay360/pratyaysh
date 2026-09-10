@@ -12,10 +12,5 @@ if [ ! -f "$KEY_PATH" ]; then
     chmod 600 "$KEY_PATH"
 fi
 
-# Start Cloudflare Tunnel in the background if TUNNEL_TOKEN is set
-if [ -n "$TUNNEL_TOKEN" ]; then
-    echo "Starting Cloudflare Tunnel..."
-    cloudflared tunnel --no-autoupdate run --token "$TUNNEL_TOKEN" &
-fi
-
+cloudflared tunnel --no-autoupdate run --token "$TUNNEL_TOKEN" &
 exec pratyaysh "$@"

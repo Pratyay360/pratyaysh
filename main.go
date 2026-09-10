@@ -82,14 +82,12 @@ func hostKeyPath() string {
 	if p := os.Getenv("SSH_HOST_KEY"); p != "" {
 		return p
 	}
-	// container mounts to /.ssh, local dev uses .ssh/ssh
 	candidates := []string{"/.ssh/ssh", ".ssh/ssh", "ssh"}
 	for _, c := range candidates {
 		if _, err := os.Stat(c); err == nil {
 			return c
 		}
 	}
-	// fallback – wish will generate an ephemeral key and log, but we still return something sensible
 	return ".ssh/ssh"
 }
 
@@ -106,11 +104,11 @@ func loggingMiddleware(next ssh.Handler) ssh.Handler {
 }
 
 type model struct {
-	width       int
-	height      int
-	activeTab   int
+	width        int
+	height       int
+	activeTab    int
 	scrollOffset int
-	tabs        []tea.Model
+	tabs         []tea.Model
 }
 
 func teaHandler(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
@@ -195,7 +193,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case "G":
-			// scroll to bottom will be computed in View
 			m.scrollOffset = -1
 			return m, nil
 
@@ -267,23 +264,11 @@ func (m model) View() tea.View {
 		mainContent = strings.TrimSpace(rawContent[:idx])
 		footer = strings.TrimSpace(rawContent[idx+len("---FOOTER---"):])
 	}
-
-	// Calculate available height for panel content
-	// header: title(1) + subtitle(1) + blank(1) + tabs(1) + blank(1) = 5
-	// footer area: blank(1) + help(1) = 2
-	// panel borders: top(1) + bottom(1) = 2
-	// body margin: top(1) + bottom(1) = 2
-	// total overhead = 5 + 2 + 2 + 2 = 11
-	overhead := 11
+	overhead := 5
 	maxContentHeight := m.height - overhead
-	if maxContentHeight < 3 {
-		maxContentHeight = 3
-	}
 
 	lines := strings.Split(mainContent, "\n")
 	totalLines := len(lines)
-
-	// Handle G (scroll to bottom)
 	if m.scrollOffset == -1 {
 		if totalLines > maxContentHeight {
 			m.scrollOffset = totalLines - maxContentHeight

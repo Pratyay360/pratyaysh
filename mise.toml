@@ -1,8 +1,6 @@
 [tools]
 go = "latest"
 sops = "latest"
-jqp = "latest"
-biome = "latest"
 golangci-lint = "latest"
 
 [deps]
